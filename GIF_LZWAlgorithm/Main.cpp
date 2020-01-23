@@ -7,79 +7,86 @@
 
 using namespace std;
 
+int GetColorTable(int count)
+{
+	return pow(2, (count + 1));
+}
+
+string LoadDataConvertToString(ifstream& _ifs, int _dataSize)
+{
+	string loadBitStr = "";					//	読み込んで反転させたビットを文字列として一つなぎで保存するための変数
+	char tmp;							//	読み取り用の一時変数
+
+	for (int i = 0; i < _dataSize; i++)
+	{
+		_ifs.get(tmp);					//	文字列を読み込む
+
+		bitset<8> loadbitset(tmp);		//	8bitの型に変換
+
+		bitset<8> reversbitset;
+		for (int i = 0; i < 8; i++)		//	反転
+		{
+			reversbitset.set(i, loadbitset[7 - i]);
+		}
+
+		loadBitStr += reversbitset.to_string();
+	}
+
+	cout << "\n=== 読み取りビット === \n" << loadBitStr << "\n" << endl;
+
+	return loadBitStr;
+}
+
+vector<unsigned long> ConvetDataToVecLong(string _str, int _firstBitSize)
+{
+	int firstBitSize = _firstBitSize;				//	最小LZW辞書サイズ
+
+	int startPos = 0;								//	読み取り開始位置
+	int endPos = firstBitSize;						//	読み取り文字列の最終位置
+
+	int strLength = _str.length();					//	文字列の長さ
+	int dataCount = strLength / firstBitSize;		//	変換後のデータ数
+
+	vector<unsigned long> convertData(dataCount);	//	変換したデータ
+
+	for (int i = 0; i < dataCount; i++)
+	{
+		cout << "開始文字位置 : " << startPos << "終了文字位置 : " << endPos << endl;
+
+		if (endPos > strLength) { break; }
+
+		std::string subStr = _str.substr(startPos, firstBitSize);	//	辞書サイズで文字抽出
+
+		cout << "抽出:" << subStr << endl;
+
+		std::reverse(subStr.begin(), subStr.end());					//	反転
+
+		cout << "反転" << subStr << endl;
+
+		bitset<256> resu(subStr);									//	ビットに変換
+
+		convertData[i] = resu.to_ulong();
+
+		startPos = endPos;
+		endPos = endPos + firstBitSize;
+	}
+
+	return convertData;
+}
+
 int main()
 {
 	ifstream ifs("test.test", ios::binary);
-
 	if (!ifs) cout << "読み取れないぞい" << endl;
 
-	char temp;
+	int tableCount = 7;
+	cout << "使用する色数" << GetColorTable(tableCount) << endl;
 
-	int count = 7;
+	string str = LoadDataConvertToString(ifs, 6);					//	データ部分を読み取って、ビット変換->1文字ずつビットを並べ替え->文字列として結合
 
-	int colorTableCount = pow(2, (count + 1));
+	vector<unsigned long> dataVec = ConvetDataToVecLong(str, 9);	//	01の文字列になっているデータを抽出->反転->ビット変換->数値変換
 
-	vector<bitset<8>> hexVec(colorTableCount);
-
-	cout << colorTableCount << endl;
-
-	string str = "";
-
-	for (int i = 0; i < 6; i++)
-	{
-		ifs.get(temp);
-
-		bitset<8> bi(temp);
-
-		hexVec[i] = bi;
-
-		bitset<8> bis;
-		for (int i = 0; i < 8; i++)
-		{
-			bis.set(i, bi[7 - i]);
-		}
-
-		unsigned long result = bi.to_ulong();
-		unsigned long reversResult = bis.to_ulong();
-
-		str += bis.to_string();
-
-		cout << hexVec[i] << endl;
-		cout << bis << endl;
-
-		cout << "10進数" << result << endl;
-		cout << "10進数" << reversResult << endl;
-	}
-
-	cout << str << endl;
-
-	int countt = 9;
-
-	int start = 0;
-	int end = countt;
-
-	for (int i = 0; i < str.length() / countt; i++)
-	{
-		cout << "開始文字位置 : " << start << "終了文字位置 : " << end << endl;
-
-		if (end > str.length()) { break; }
-
-		std::string substr = str.substr(start, 9);
-
-		cout << "抽出:" << substr << endl;
-
-		std::string stra = substr;
-
-		std::reverse(stra.begin(), stra.end());
-
-		cout << "反転" << stra << endl;
-
-		bitset<9> resu(stra);
-		unsigned long tt = resu.to_ulong();
-
-		cout << tt << endl;
-
-		start = end;
-		end = end + 9;
+	for (const auto& data : dataVec) {
+		cout << data << endl;
 	}
 }
